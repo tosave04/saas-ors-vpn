@@ -42,7 +42,6 @@ import type {
   Feature,
   FeatureCollection,
   GeoJsonObject,
-  Geometry,
   GeometryCollection,
   LineString,
   MultiLineString,

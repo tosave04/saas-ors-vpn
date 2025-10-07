@@ -2,6 +2,7 @@ import type {
   Feature,
   FeatureCollection,
   GeoJsonObject,
+  Geometry,
   LineString,
   MultiPolygon,
   Polygon
@@ -150,6 +151,36 @@ export interface ElevationLineRequest {
 }
 
 export type GeocodeCommonParams = Record<string, unknown>;
+
+export type GeocodeFeature = Feature<Geometry | null, Record<string, unknown>>;
+
+export type GeocodeLookupStage =
+  | 'structured_postal_locality'
+  | 'structured_postal'
+  | 'autocomplete';
+
+export interface GeocodeLookupAttempt {
+  stage: GeocodeLookupStage;
+  params: GeocodeCommonParams;
+  feature?: GeocodeFeature;
+  coordinates?: LonLat;
+  error?: unknown;
+}
+
+export interface GeocodeLookupResult {
+  stage: GeocodeLookupStage | 'not_found';
+  feature?: GeocodeFeature;
+  coordinates?: LonLat;
+  attempts: GeocodeLookupAttempt[];
+}
+
+export interface GeocodeTownZipQuery {
+  town?: string;
+  zip?: string;
+  countryCode?: string;
+  structuredSize?: number;
+  autocompleteSize?: number;
+}
 
 export interface RequestOptions {
   signal?: AbortSignal;

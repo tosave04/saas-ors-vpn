@@ -83,11 +83,22 @@ const matrix = await ors.matrix('driving-car', {
 ### Geocoding
 
 ```ts
+// geocodeTownZipLookup is exported from 'saas-ors-vpn'
 const places = await ors.geocodeSearch({ text: 'FR, Paris, Rue de Rivoli' });
 const reverse = await ors.geocodeReverse({
   point: { lat: 49.41461, lng: 8.681495 },
   layers: ['address']
 });
+
+const lookup = await geocodeTownZipLookup(ors, {
+  town: 'Nice',
+  zip: '06000',
+  countryCode: 'FR'
+});
+
+if (lookup.coordinates) {
+  console.log(`Best match from ${lookup.stage}`, lookup.coordinates);
+}
 ```
 
 ## Rate limiting and restrictions
@@ -161,3 +172,9 @@ npm run build
 ## License
 
 ISC (adjust to your needs).
+
+### Tools
+
+| Helper | Description |
+| --- | --- |
+| `geocodeTownZipLookup(ors, query, options?)` | Chained lookup using town, zip, and country hints |

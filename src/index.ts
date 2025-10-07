@@ -8,3 +8,4 @@ export {
   DEFAULT_TIMEOUT,
   DEFAULT_USER_AGENT
 } from './constants.js';
+export * from './tools/geocode.js';
