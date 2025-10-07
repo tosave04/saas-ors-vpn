@@ -1,6 +1,6 @@
-type Task<T> = {
-  fn: () => Promise<T>;
-  resolve: (value: T | PromiseLike<T>) => void;
+type Task = {
+  fn: () => Promise<unknown>;
+  resolve: (value: unknown) => void;
   reject: (reason?: unknown) => void;
 };
 
@@ -14,7 +14,7 @@ export class RateLimiter {
   private readonly intervalMs: number;
   private tokens: number;
   private lastRefill: number;
-  private queue: Task<unknown>[] = [];
+  private queue: Task[] = [];
   private timer?: NodeJS.Timeout;
 
   constructor(options: RateLimiterOptions) {
@@ -35,7 +35,12 @@ export class RateLimiter {
     }
 
     return new Promise<T>((resolve, reject) => {
-      this.queue.push({ fn, resolve, reject });
+      const task: Task = {
+        fn: () => fn() as Promise<unknown>,
+        resolve: (value) => resolve(value as T),
+        reject
+      };
+      this.queue.push(task);
       this.ensureProcessingScheduled();
     });
   }
@@ -54,7 +59,7 @@ export class RateLimiter {
   private processQueue() {
     this.refillTokens();
     while (this.tokens > 0 && this.queue.length > 0) {
-      const task = this.queue.shift() as Task<unknown>;
+      const task = this.queue.shift() as Task;
       this.tokens -= 1;
       task.fn().then(task.resolve, task.reject);
     }

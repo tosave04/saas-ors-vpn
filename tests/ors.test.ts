@@ -70,10 +70,14 @@ describe('ORS client', () => {
       rateLimit: { enabled: false }
     });
 
-    const coordinates = Array.from({ length: 51 }, (_, idx) => [
-      8.6 + idx * 0.001,
-      49.4 + idx * 0.001
-    ]);
+    const coordinates: [number, number][] = Array.from(
+      { length: 51 },
+      (_, idx) =>
+        [
+          8.6 + idx * 0.001,
+          49.4 + idx * 0.001
+        ] as [number, number]
+    );
 
     await expect(
       ors.directions('driving-car', { coordinates })
@@ -106,7 +110,7 @@ describe('ORS client', () => {
       autoLoadEnv: false,
       rateLimit: { enabled: false },
       limits: {
-        matrix: { maxLocationsProduct: 4 }
+        matrix: { maxLocationsProduct: 4, maxDynamicLocations: 4 }
       }
     });
 
