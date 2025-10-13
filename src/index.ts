@@ -11,3 +11,4 @@ export {
 export * from './tools/geocode.js';
 export * from './tools/routeProximity.js';
 export * from './tools/tourPlanner.js';
+export * from './tools/vrpPlanner.js';
