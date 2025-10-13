@@ -9,3 +9,4 @@ export {
   DEFAULT_USER_AGENT
 } from './constants.js';
 export * from './tools/geocode.js';
+export * from './tools/routeProximity.js';
