@@ -10,3 +10,4 @@ export {
 } from './constants.js';
 export * from './tools/geocode.js';
 export * from './tools/routeProximity.js';
+export * from './tools/tourPlanner.js';
