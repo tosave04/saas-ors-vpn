@@ -1,6 +1,6 @@
 {
   "name": "saas-ors-vpn",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "TypeScript wrapper around the openrouteservice API with built-in rate limiting and env-friendly configuration.",
   "repository": {
     "type": "git",
@@ -8,8 +8,8 @@
   },
   "homepage": "https://github.com/tosave04/saas-ors-vpn#readme",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
