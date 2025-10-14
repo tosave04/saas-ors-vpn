@@ -683,8 +683,28 @@ const injectAlongRouteClients = (
  * Builds clustered delivery tours by combining ORS matrix, isochrone, and directions services with heuristics.
  * Useful for medium fleets that need quick proposals before running full optimization.
  * @param ors - Initialized ORS client used for upstream API calls.
- * @param request - Core planning input including depot, clients, capacity, and desired tours.
- * @param options - Optional tuning knobs such as profile, clustering radius, and request overrides.
+ * @param request - Core planning input including depot, clients, capacity, and desired tours. Expected keys:
+ *   - `clients`: Array of deliveries with `name`, `[lon,lat]` `coordinate`, `weightKg`, and `orderDate`; optional `id` and `urgent`.
+ *   - `truckCapacityKg`: Maximum payload the vehicle can carry; enforced against cumulative client weights per tour.
+ *   - `desiredTourCount`: Number of tours the heuristic tries to seed before filling with nearby clients.
+ *   - `depot`: `[lon,lat]` coordinate used as origin/terminus for every tour and routing request.
+ * @param options - Optional tuning knobs controlling heuristics, limits, and upstream requests. Supported keys:
+ *   - `profile` (default `'driving-hgv'`): ORS directions profile applied to every matrix/isochrone/directions call.
+ *   - `isoRangeMinutes` (default `60`): Travel time window for each seed isochrone; values above ORS caps are clamped.
+ *   - `maxIsoRequests` (default `5`): Ceiling on isochrone calls per run to keep API usage within account limits.
+ *   - `clusterRadiusKm` (default `35`): Maximum straight-line distance from a seed for non-isochrone candidates.
+ *   - `neighborRadiusKm` (default `25`): Radius used when counting neighboring clients for score weighting.
+ *   - `alongRouteToleranceKm` (default `8`): Corridor width used when injecting extra clients along the final route.
+ *   - `averageSpeedKmh` (default `55`): Speed assumption for fallback durations and initial depot distance metrics.
+ *   - `scoringWeights` (defaults `{ age:0.5, distance:0.25, cluster:0.15, urgent:0.1 }`): Partial override for score weights.
+ *   - `referenceDate` (default `new Date()`): Timestamp used to compute client aging when prioritizing older orders.
+ *   - `maxCandidatesPerTour` (default `40`): Safety cap on stops considered per tour before aborting further insertions.
+ *   - `limits.matrixMaxCells`: Hard stop for matrix cell count before falling back to haversine estimates.
+ *   - `limits.directionsMaxWaypoints`: Maximum waypoints allowed when asking ORS for detailed directions geometry.
+ *   - `limits.isochroneMaxLocations`: Upper bound on the number of locations included in isochrone requests.
+ *   - `matrixRequestOptions`: Extra request metadata (AbortSignal/Axios config) forwarded to `ors.matrix`.
+ *   - `isochroneRequestOptions`: Additional options forwarded to `ors.isochrones`.
+ *   - `directionsRequestOptions`: Additional options forwarded to `ors.directions`.
  * @returns Planned tours, unassigned clients, warnings, and scoring metadata.
  * @example
  * ```ts
