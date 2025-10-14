@@ -228,6 +228,21 @@ export class ORS {
   private readonly defaultHeaders: Record<string, string>;
   private readonly rateLimiter?: RateLimiter;
 
+  /**
+   * Builds a ready-to-use ORS client with shared axios transport, limits, and optional rate limiting.
+   * The constructor can auto-load environment variables, configure custom base URLs, and hydrate defaults for downstream calls.
+   * @param options - Client level overrides such as API key, timeouts, default profile, base URL, headers, and limits.
+   * @throws Error when no API key is supplied via options or the expected environment variable.
+   * @example
+   * ```ts
+   * import ORS from './ors.js';
+   *
+   * const ors = new ORS({
+   *   apiKey: process.env.ORS_TOKEN ?? '',
+   *   defaultProfile: 'driving-car'
+   * });
+   * ```
+   */
   constructor(options: ORSClientOptions = {}) {
     const {
       baseUrl = DEFAULT_BASE_URL,
@@ -280,6 +295,15 @@ export class ORS {
     this.defaultProfile = defaultProfile;
   }
 
+  /**
+   * Replaces the API key used for subsequent API calls without rebuilding the client.
+   * @param apiKey - The OpenRouteService token to apply.
+   * @throws Error when the provided key is empty.
+   * @example
+   * ```ts
+   * ors.setApiKey(env.ORS_FALLBACK_KEY);
+   * ```
+   */
   public setApiKey(apiKey: string): void {
     if (!apiKey) {
       throw new Error('API key cannot be empty.');
@@ -287,6 +311,20 @@ export class ORS {
     this.apiKey = apiKey;
   }
 
+  /**
+   * Executes an HTTP request with merged headers, opt-in abort signals, and optional rate limiting.
+   * @param config - Base axios request configuration to send.
+   * @param options - Optional per-request overrides including abort signal and axios tweaks.
+   * @returns The typed response payload from the API.
+   * @throws Error when the request fails or the rate limiter rejects execution.
+    * @example
+    * ```ts
+    * return this.runRequest<{ status: string }>({
+    *   method: 'GET',
+    *   url: 'health'
+    * });
+    * ```
+   */
   private async runRequest<T>(
     config: AxiosRequestConfig,
     options?: RequestOptions
@@ -318,6 +356,16 @@ export class ORS {
     return this.rateLimiter.schedule(execute);
   }
 
+  /**
+   * Resolves the effective directions profile, falling back to the configured default when missing.
+   * @param profile - Optional profile provided by the caller.
+   * @returns Profile value guaranteed to be defined.
+   * @throws Error when no profile is supplied and no default profile has been configured.
+    * @example
+    * ```ts
+    * const profile = this.ensureProfile(inputProfile);
+    * ```
+   */
   private ensureProfile(profile?: DirectionsProfile): DirectionsProfile {
     if (profile) {
       return profile;
@@ -330,6 +378,16 @@ export class ORS {
     return this.defaultProfile;
   }
 
+  /**
+   * Ensures a directions request respects configured limits before contacting the API.
+   * @param profile - Directions profile used to evaluate constraint thresholds.
+   * @param request - Directions body submitted by the caller.
+   * @throws Error when mandatory fields are missing or limits are exceeded.
+    * @example
+    * ```ts
+    * this.validateDirections('driving-car', requestBody);
+    * ```
+   */
   private validateDirections(
     profile: DirectionsProfile,
     request: DirectionsRequest
@@ -416,6 +474,16 @@ export class ORS {
     }
   }
 
+  /**
+   * Validates isochrone input against supported profiles, ranges, and limit constraints.
+   * @param profile - Isochrone profile to validate against.
+   * @param request - Isochrone payload provided by the caller.
+   * @throws Error when required fields are absent or a limit is surpassed.
+    * @example
+    * ```ts
+    * this.validateIsochrones('cycling-electric', requestPayload);
+    * ```
+   */
   private validateIsochrones(
     profile: IsochroneProfile,
     request: IsochroneRequest
@@ -466,6 +534,15 @@ export class ORS {
     }
   }
 
+  /**
+   * Checks matrix requests for minimum fields and cell-count thresholds before dispatching.
+   * @param request - Matrix request definition.
+   * @throws Error when coordinates are missing or size thresholds are exceeded.
+    * @example
+    * ```ts
+    * this.validateMatrix(matrixRequest);
+    * ```
+   */
   private validateMatrix(request: MatrixRequest): void {
     if (!request.locations || request.locations.length === 0) {
       throw new Error('Matrix request requires at least one location.');
@@ -502,6 +579,15 @@ export class ORS {
     }
   }
 
+  /**
+   * Guards snap requests to ensure location counts stay within supported bounds.
+   * @param request - Snap request body to validate.
+   * @throws Error when no locations are provided or the limit is exceeded.
+    * @example
+    * ```ts
+    * this.validateSnap(snapRequest);
+    * ```
+   */
   private validateSnap(request: SnapRequest): void {
     if (!request.locations || request.locations.length === 0) {
       throw new Error('Snap request requires at least one location.');
@@ -513,6 +599,15 @@ export class ORS {
     }
   }
 
+  /**
+   * Runs safety checks on POI searches to keep geometry areas, radii, and linestrings inside service limits.
+   * @param request - POIs request submitted by the caller.
+   * @throws Error when mandatory geometry is missing or a constraint is breached.
+    * @example
+    * ```ts
+    * this.validatePois(poisRequest);
+    * ```
+   */
   private validatePois(request: PoisRequest): void {
     if (!request.geometry) {
       throw new Error('POIs request requires geometry definition.');
@@ -575,12 +670,30 @@ export class ORS {
     }
   }
 
+  /**
+   * Confirms elevation point requests include a geometry payload.
+   * @param request - Elevation point request payload.
+   * @throws Error when geometry input is missing.
+    * @example
+    * ```ts
+    * this.validateElevationPoint(elevationPointRequest);
+    * ```
+   */
   private validateElevationPoint(request: ElevationPointRequest): void {
     if (!request.geometry) {
       throw new Error('Elevation point request requires geometry.');
     }
   }
 
+  /**
+   * Confirms elevation line requests contain valid geometry and respect vertex limits.
+   * @param request - Elevation line request payload.
+   * @throws Error when geometry is absent or exceeds the supported vertex count.
+    * @example
+    * ```ts
+    * this.validateElevationLine(elevationLineRequest);
+    * ```
+   */
   private validateElevationLine(request: ElevationLineRequest): void {
     if (!request.geometry) {
       throw new Error('Elevation line request requires geometry.');
@@ -598,6 +711,15 @@ export class ORS {
     }
   }
 
+  /**
+   * Validates optimization payloads for minimum jobs, vehicles, and limit compliance.
+   * @param request - Optimization request the client is about to send.
+   * @throws Error when jobs or vehicles are missing or the limits are hit.
+    * @example
+    * ```ts
+    * this.validateOptimization(optimizationRequest);
+    * ```
+   */
   private validateOptimization(request: OptimizationRequest): void {
     if (!Array.isArray(request.jobs) || request.jobs.length === 0) {
       throw new Error('Optimization request requires at least one job.');
@@ -617,6 +739,23 @@ export class ORS {
     }
   }
 
+  /**
+   * Requests turn-by-turn directions for the given profile and coordinates after validating limits.
+   * @param profile - Routing profile to use; falls back to the default profile when omitted.
+   * @param request - Directions payload including coordinates, format, and options.
+   * @param options - Optional request options such as abort signals or axios overrides.
+   * @returns API response typed as T based on the requested format.
+    * @example
+    * ```ts
+    * const ors = new ORS({ apiKey: process.env.ORS_TOKEN ?? '' });
+    * const route = await ors.directions('driving-car', {
+    *   coordinates: [
+    *     [8.681495, 49.41461],
+    *     [8.687872, 49.420318]
+    *   ]
+    * });
+    * ```
+   */
   async directions<T = unknown>(
     profile: DirectionsProfile,
     request: DirectionsRequest,
@@ -647,6 +786,22 @@ export class ORS {
     );
   }
 
+  /**
+   * Generates isochrone polygons for the provided profile once the payload passes validation.
+   * @param profile - Isochrone profile to use; defaults to the configured profile when compatible.
+   * @param request - Isochrone request body with locations and range settings.
+   * @param options - Optional request execution controls.
+   * @returns API response typed as T.
+   * @throws Error when no compatible profile is available.
+    * @example
+    * ```ts
+    * const ors = new ORS({ apiKey: process.env.ORS_TOKEN ?? '' });
+    * const isochrone = await ors.isochrones('cycling-regular', {
+    *   locations: [[8.681495, 49.41461]],
+    *   range: [600, 1200]
+    * });
+    * ```
+   */
   async isochrones<T = unknown>(
     profile: IsochroneProfile,
     request: IsochroneRequest,
@@ -681,6 +836,22 @@ export class ORS {
     );
   }
 
+  /**
+   * Computes a travel matrix for the given profile and locations.
+   * @param profile - Matrix profile to apply; falls back to the default profile when omitted.
+   * @param request - Matrix request configuration.
+   * @param options - Optional request options such as per-call axios overrides.
+   * @returns API response typed as T.
+    * @example
+    * ```ts
+    * const matrix = await ors.matrix('driving-hgv', {
+    *   locations: [
+    *     [8.681495, 49.41461],
+    *     [8.687872, 49.420318]
+    *   ]
+    * });
+    * ```
+   */
   async matrix<T = unknown>(
     profile: MatrixProfile,
     request: MatrixRequest,
@@ -699,6 +870,19 @@ export class ORS {
     );
   }
 
+  /**
+   * Runs the ORS optimization endpoint after validating jobs and vehicles.
+   * @param request - Optimization problem definition.
+   * @param options - Optional request settings.
+   * @returns API response typed as T.
+    * @example
+    * ```ts
+    * const solution = await ors.optimization({
+    *   jobs: [{ id: 1, location: [8.681495, 49.41461] }],
+    *   vehicles: [{ id: 1, start: [8.687872, 49.420318] }]
+    * });
+    * ```
+   */
   async optimization<T = unknown>(
     request: OptimizationRequest,
     options?: RequestOptions
@@ -714,6 +898,22 @@ export class ORS {
     );
   }
 
+  /**
+   * Snaps coordinate sequences to the road network for a specific profile.
+   * @param profile - Snap profile to apply.
+   * @param request - Snap request body containing locations and options.
+   * @param options - Optional request settings.
+   * @returns API response typed as T.
+    * @example
+    * ```ts
+    * const snapped = await ors.snap('cycling-road', {
+    *   locations: [
+    *     [8.681495, 49.41461],
+    *     [8.687872, 49.420318]
+    *   ]
+    * });
+    * ```
+   */
   async snap<T = unknown>(
     profile: SnapProfile,
     request: SnapRequest,
@@ -732,6 +932,22 @@ export class ORS {
     );
   }
 
+  /**
+   * Queries points of interest within the provided geometry constraints.
+   * @param request - POIs request payload.
+   * @param options - Optional request settings.
+   * @returns API response typed as T.
+    * @example
+    * ```ts
+    * const pois = await ors.pois({
+    *   request: 'radius',
+    *   geometry: {
+    *     center: [8.681495, 49.41461],
+    *     radius: 500
+    *   }
+    * });
+    * ```
+   */
   async pois<T = unknown>(
     request: PoisRequest,
     options?: RequestOptions
@@ -747,6 +963,21 @@ export class ORS {
     );
   }
 
+  /**
+   * Fetches elevation data for point geometries after validating the payload.
+   * @param request - Elevation point request body.
+   * @param options - Optional request options.
+   * @returns API response typed as T.
+    * @example
+    * ```ts
+    * const elevation = await ors.elevationPoint({
+    *   geometry: {
+    *     coordinates: [8.681495, 49.41461],
+    *     type: 'Point'
+    *   }
+    * });
+    * ```
+   */
   async elevationPoint<T = unknown>(
     request: ElevationPointRequest,
     options?: RequestOptions
@@ -762,6 +993,24 @@ export class ORS {
     );
   }
 
+  /**
+   * Fetches elevation profiles for line geometries while enforcing vertex limits.
+   * @param request - Elevation line request definition.
+   * @param options - Optional request options.
+   * @returns API response typed as T.
+    * @example
+    * ```ts
+    * const elevationProfile = await ors.elevationLine({
+    *   geometry: {
+    *     type: 'LineString',
+    *     coordinates: [
+    *       [8.681495, 49.41461],
+    *       [8.687872, 49.420318]
+    *     ]
+    *   }
+    * });
+    * ```
+   */
   async elevationLine<T = unknown>(
     request: ElevationLineRequest,
     options?: RequestOptions
@@ -777,6 +1026,17 @@ export class ORS {
     );
   }
 
+  /**
+   * Internal helper for running geocode GET requests with shared plumbing.
+   * @param endpoint - Geocode endpoint segment.
+   * @param params - Query parameters accepted by geocode endpoints.
+   * @param options - Optional request options.
+   * @returns API response typed as T.
+    * @example
+    * ```ts
+    * return this.geocode('geocode/search', params, options);
+    * ```
+   */
   private async geocode<T = unknown>(
     endpoint: string,
     params: GeocodeCommonParams,
@@ -792,6 +1052,17 @@ export class ORS {
     );
   }
 
+  /**
+   * Performs a forward geocoding query using free-form text.
+   * @param params - Geocode parameters; must include non-empty text.
+   * @param options - Optional request options.
+   * @returns Geocode response typed as T.
+   * @throws Error when the text parameter is missing or blank.
+    * @example
+    * ```ts
+    * const results = await ors.geocodeSearch({ text: 'Heidelberg' });
+    * ```
+   */
   async geocodeSearch<T = unknown>(
     params: GeocodeCommonParams,
     options?: RequestOptions
@@ -802,6 +1073,19 @@ export class ORS {
     return this.geocode<T>('geocode/search', params, options);
   }
 
+  /**
+   * Performs reverse geocoding for the provided point coordinates.
+   * @param params - Geocode parameters; must include a point with lat and lng.
+   * @param options - Optional request options.
+   * @returns Geocode response typed as T.
+   * @throws Error when the point coordinates are incomplete.
+    * @example
+    * ```ts
+    * const reverse = await ors.geocodeReverse({
+    *   point: { lat: 49.41461, lng: 8.681495 }
+    * });
+    * ```
+   */
   async geocodeReverse<T = unknown>(
     params: GeocodeCommonParams,
     options?: RequestOptions
@@ -819,6 +1103,17 @@ export class ORS {
     return this.geocode<T>('geocode/reverse', params, options);
   }
 
+  /**
+   * Retrieves autocomplete candidates for partial text input.
+   * @param params - Geocode parameters; requires non-empty text.
+   * @param options - Optional request options.
+   * @returns Geocode autocomplete response typed as T.
+   * @throws Error when the text parameter is missing or blank.
+    * @example
+    * ```ts
+    * const suggestions = await ors.geocodeAutocomplete({ text: 'Heidel' });
+    * ```
+   */
   async geocodeAutocomplete<T = unknown>(
     params: GeocodeCommonParams,
     options?: RequestOptions
@@ -831,6 +1126,20 @@ export class ORS {
     return this.geocode<T>('geocode/autocomplete', params, options);
   }
 
+  /**
+   * Runs a structured geocoding query with fielded address input.
+   * @param params - Geocode parameters to forward to the structured endpoint.
+   * @param options - Optional request options.
+   * @returns Geocode response typed as T.
+    * @example
+    * ```ts
+    * const structured = await ors.geocodeStructured({
+    *   housenumber: '1',
+    *   street: 'Korngasse',
+    *   locality: 'Heidelberg'
+    * });
+    * ```
+   */
   async geocodeStructured<T = unknown>(
     params: GeocodeCommonParams,
     options?: RequestOptions

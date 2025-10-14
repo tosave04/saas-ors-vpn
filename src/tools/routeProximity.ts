@@ -175,6 +175,23 @@ const validateCoordinate = (coordinate: LonLat): void => {
   }
 };
 
+/**
+ * Measures how far a coordinate sits from a route geometry and reports whether it is within tolerance.
+ * Handles FeatureCollection, Feature, or raw GeoJSON inputs and keeps calculations spherical.
+ * @param route - GeoJSON describing the route or corridor to compare against.
+ * @param coordinate - `[lon, lat]` location to test.
+ * @param options - Optional overrides including `toleranceKm`.
+ * @returns Distance in kilometers plus a boolean convenience flag.
+ * @example
+ * ```ts
+ * const proximity = computeRouteProximity(routeGeoJson, [8.68, 49.41], {
+ *   toleranceKm: 0.2
+ * });
+ * if (!proximity.isWithinTolerance) {
+ *   console.warn(`Client is ${proximity.distanceKm.toFixed(2)} km away from the route`);
+ * }
+ * ```
+ */
 export const computeRouteProximity = (
   route: FeatureCollection | Feature | GeoJsonObject,
   coordinate: LonLat,
@@ -204,6 +221,19 @@ export const computeRouteProximity = (
   };
 };
 
+/**
+ * Convenience wrapper that answers “is this coordinate close enough to the route?” using `computeRouteProximity`.
+ * @param route - GeoJSON describing the route or corridor to compare against.
+ * @param coordinate - `[lon, lat]` location to test.
+ * @param toleranceKm - Optional tolerance in kilometers (defaults to the helper’s internal value).
+ * @returns `true` when the coordinate is at or below the tolerance, otherwise `false`.
+ * @example
+ * ```ts
+ * if (isCoordinateNearRoute(routeGeoJson, [8.68, 49.41], 0.15)) {
+ *   console.log('The stop remains inside the delivery corridor');
+ * }
+ * ```
+ */
 export const isCoordinateNearRoute = (
   route: FeatureCollection | Feature | GeoJsonObject,
   coordinate: LonLat,

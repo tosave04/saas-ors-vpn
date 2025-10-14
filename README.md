@@ -1,5 +1,9 @@
 # ORS TypeScript Client
 
+> **Please note:**  
+> This package is under development and testing.
+> No results are guaranteed; evaluate whether it fits your use case before relying on it.
+
 A TypeScript wrapper around the [openrouteservice API](https://openrouteservice.org/dev/#/api-docs) for Node.js projects.
 It ships with `.env` support, a rate limiter that follows the published restrictions,
 and pre-flight validation to catch common mistakes early.
@@ -106,9 +110,9 @@ if (lookup.coordinates) {
 The implementation follows the values published at <https://openrouteservice.org/restrictions>:
 
 - 40 requests per minute by default (override via `rateLimit`)
-- Directions: 50 waypoints max, avoidance polygons limited to 200 km² area and 20 km extent
-- Isochrones: up to 5 locations, 10 ranges, 120 km / 20 h range depending on the profile
-- Matrix: 3,500 cells max (50 × 50), 25 cells when using dynamic sources/destinations
+- Directions: 50 waypoints max, avoidance polygons limited to 200 km^2 area and 20 km extent
+- Isochrones: up to 5 locations, 10 ranges, 120 km or 20 h depending on the profile
+- Matrix: 3,500 cells max (50 x 50), 25 cells when using dynamic sources/destinations
 - POIs, snap, optimization, and elevation include additional geometry checks
 
 Need higher limits? Pass partial overrides:
@@ -151,9 +155,9 @@ await ors.directions('driving-car', body, {
 
 ## npm scripts
 
-- `npm run build` – bundles to `dist/` with `tsup`
-- `npm run test` – runs the Vitest suite
-- `npm run test:watch` – watch mode for development
+- `npm run build` - bundles to `dist/` with `tsup`
+- `npm run test` - runs the Vitest suite
+- `npm run test:watch` - watch mode for development
 
 ## Development flow
 
@@ -178,3 +182,80 @@ ISC (adjust to your needs).
 | Helper | Description |
 | --- | --- |
 | `geocodeTownZipLookup(ors, query, options?)` | Chained lookup using town, zip, and country hints |
+| `computeRouteProximity(route, coordinate, options?)` | Returns distance in km plus a tolerance check for a coordinate against a route geometry |
+| `isCoordinateNearRoute(route, coordinate, toleranceKm?)` | Boolean shortcut that wraps `computeRouteProximity` |
+| `planDeliveryTours(ors, request, options?)` | Heuristic clustering planner that combines matrix, isochrones, and directions data |
+| `planDeliveryToursVRP(ors, request, options?)` | Optimization-based planner powered by the ORS VRP endpoint |
+
+#### Route proximity helpers
+
+```ts
+import { computeRouteProximity, isCoordinateNearRoute } from 'saas-ors-vpn';
+
+const routeGeoJson = /* GeoJSON FeatureCollection or LineString from an ORS directions call */;
+
+const { distanceKm, isWithinTolerance } = computeRouteProximity(routeGeoJson, [8.68, 49.41], {
+  toleranceKm: 0.25
+});
+
+if (!isCoordinateNearRoute(routeGeoJson, [8.68, 49.41], 0.1)) {
+  console.warn('Client is outside the corridor');
+}
+```
+
+#### Heuristic delivery tour planner
+
+```ts
+import ORS, { planDeliveryTours } from 'saas-ors-vpn';
+
+const ors = new ORS({ apiKey: process.env.ORS_API_KEY!, defaultProfile: 'driving-hgv' });
+
+const result = await planDeliveryTours(
+  ors,
+  {
+    clients: [
+      { name: 'Client 1', coordinate: [8.68, 49.41], weightKg: 200, orderDate: new Date() },
+      { name: 'Client 2', coordinate: [8.70, 49.42], weightKg: 150, orderDate: new Date() }
+    ],
+    truckCapacityKg: 2_000,
+    desiredTourCount: 1,
+    depot: [8.65, 49.40]
+  },
+  {
+    alongRouteToleranceKm: 0.2
+  }
+);
+
+console.log(result.tours[0].estimatedDistanceKm);
+```
+
+#### VRP solver wrapper
+
+```ts
+import ORS, { planDeliveryToursVRP } from 'saas-ors-vpn';
+
+const ors = new ORS({ apiKey: process.env.ORS_API_KEY!, defaultProfile: 'driving-hgv' });
+
+const result = await planDeliveryToursVRP(ors, {
+  clients: [
+    { name: 'Client 1', coordinate: [8.68, 49.41], weightKg: 200, orderDate: new Date() },
+    { name: 'Client 2', coordinate: [8.70, 49.42], weightKg: 150, orderDate: new Date() }
+  ],
+  truckCapacityKg: 2_000,
+  desiredTourCount: 1,
+  depot: [8.65, 49.40]
+});
+
+if (result.warnings.length) {
+  console.warn(result.warnings.join('\n'));
+}
+```
+
+
+
+
+
+
+
+
+

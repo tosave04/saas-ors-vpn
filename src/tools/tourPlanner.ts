@@ -745,6 +745,30 @@ const injectAlongRouteClients = (
   return inserted;
 };
 
+/**
+ * Builds clustered delivery tours by combining ORS matrix, isochrone, and directions services with heuristics.
+ * Useful for medium fleets that need quick proposals before running full optimization.
+ * @param ors - Initialized ORS client used for upstream API calls.
+ * @param request - Core planning input including depot, clients, capacity, and desired tours.
+ * @param options - Optional tuning knobs such as profile, clustering radius, and request overrides.
+ * @returns Planned tours, unassigned clients, warnings, and scoring metadata.
+ * @example
+ * ```ts
+ * const result = await planDeliveryTours(ors, {
+ *   clients: [
+ *     { name: 'Client 1', coordinate: [8.68, 49.41], weightKg: 200, orderDate: new Date() },
+ *     { name: 'Client 2', coordinate: [8.70, 49.42], weightKg: 150, orderDate: new Date() }
+ *   ],
+ *   truckCapacityKg: 2_000,
+ *   desiredTourCount: 1,
+ *   depot: [8.65, 49.40]
+ * }, {
+ *   alongRouteToleranceKm: 0.2,
+ *   profile: 'driving-hgv'
+ * });
+ * console.log(result.tours[0].estimatedDistanceKm);
+ * ```
+ */
 export const planDeliveryTours = async (
   ors: ORS,
   request: TourPlanningRequest,

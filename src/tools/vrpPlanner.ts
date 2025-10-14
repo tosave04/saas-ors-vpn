@@ -312,6 +312,30 @@ const buildRouteGeoJson = (coordinates: LonLat[]) => {
   return featureCollection;
 };
 
+/**
+ * Delegates delivery tour construction to the ORS optimization endpoint (VRP solver) with sensible defaults.
+ * Ideal when you want solver-backed routes but still need structured application output.
+ * @param ors - Initialized ORS client used to call the optimization endpoint.
+ * @param request - Planning input including depot, clients, truck capacity, and requested vehicle count.
+ * @param options - Optional solver tuning such as profile, service times, and shift configuration.
+ * @returns Planned tours, unassigned clients, solver metadata, and warnings.
+ * @example
+ * ```ts
+ * const vrpResult = await planDeliveryToursVRP(ors, {
+ *   clients: [
+ *     { name: 'Client 1', coordinate: [8.68, 49.41], weightKg: 200, orderDate: new Date() },
+ *     { name: 'Client 2', coordinate: [8.70, 49.42], weightKg: 150, orderDate: new Date() }
+ *   ],
+ *   truckCapacityKg: 2_000,
+ *   desiredTourCount: 2,
+ *   depot: [8.65, 49.40]
+ * }, {
+ *   serviceTimeMinutes: 15,
+ *   profile: 'driving-hgv'
+ * });
+ * console.log(vrpResult.tours.map((tour) => tour.stops.length));
+ * ```
+ */
 export const planDeliveryToursVRP = async (
   ors: ORS,
   request: TourPlanningRequest,

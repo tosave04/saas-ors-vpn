@@ -116,6 +116,25 @@ const pickAutocompleteMatch = (
   return findFirstPointFeature(response);
 };
 
+/**
+ * Attempts to resolve a town/ZIP combination by chaining structured and autocomplete geocoding calls.
+ * The helper feeds previous results back into ORS endpoints to improve match quality for European style addresses.
+ * @param ors - An initialized ORS client instance.
+ * @param query - Town, ZIP, and optional country code inputs provided by the caller.
+ * @param options - Optional ORS request overrides such as throttling or axios tweaks.
+ * @returns A best-effort lookup result with coordinates, the winning stage, and debug attempts.
+ * @example
+ * ```ts
+ * const lookup = await geocodeTownZipLookup(ors, {
+ *   town: 'Nice',
+ *   zip: '06000',
+ *   countryCode: 'FR'
+ * });
+ * if (lookup.coordinates) {
+ *   console.log(`Matched ${lookup.stage} at`, lookup.coordinates);
+ * }
+ * ```
+ */
 export const geocodeTownZipLookup = async (
   ors: ORS,
   query: GeocodeTownZipQuery,
@@ -262,4 +281,3 @@ export const geocodeTownZipLookup = async (
     attempts
   };
 };
-
