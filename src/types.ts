@@ -207,8 +207,6 @@ export interface ORSClientOptions {
   limits?: PartialDeep<ORSLimits>;
   headers?: Record<string, string>;
   userAgent?: string;
-  autoLoadEnv?: boolean;
-  envFilePath?: string;
 }
 
 export interface RequestMetadata {
