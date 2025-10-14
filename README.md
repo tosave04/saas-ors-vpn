@@ -5,8 +5,8 @@
 > No results are guaranteed; evaluate whether it fits your use case before relying on it.
 
 A TypeScript wrapper around the [openrouteservice API](https://openrouteservice.org/dev/#/api-docs) for Node.js projects.
-It ships with `.env` support, a rate limiter that follows the published restrictions,
-and pre-flight validation to catch common mistakes early.
+It expects you to provide the API key via `process.env` or constructor options, ships with a rate limiter that follows the published restrictions,
+and performs pre-flight validation to catch common mistakes early.
 
 - Coverage: directions, isochrones, matrix, optimization, POIs, snap, geocoding, elevation
 - Built-in rate limiting (40 requests/min by default, configurable)
@@ -29,24 +29,24 @@ Two easy options:
 1. **Pass it explicitly**
 
 ```ts
-import ORS from 'saas-ors-vpn';
+import { ORS } from 'saas-ors-vpn';
 
 const ors = new ORS({ apiKey: process.env.ORS_API_KEY! });
 ```
 
-2. **Use a `.env` file**
+2. **Expose an environment variable**
 
 ```text
-# .env
+# Exemple .env
 ORS_API_KEY=your-ors-api-key
 ```
 
-The client calls `dotenv` automatically (opt out with `autoLoadEnv: false`).
+Chargez le fichier vous-meme (par exemple avec `import 'dotenv/config'` ou via votre orchestrateur) avant d'instancier le client.
 
 ## Quick start
 
 ```ts
-import ORS from 'saas-ors-vpn';
+import { ORS } from 'saas-ors-vpn';
 
 const ors = new ORS({
   defaultProfile: 'driving-car'
@@ -206,7 +206,7 @@ if (!isCoordinateNearRoute(routeGeoJson, [8.68, 49.41], 0.1)) {
 #### Heuristic delivery tour planner
 
 ```ts
-import ORS, { planDeliveryTours } from 'saas-ors-vpn';
+import { ORS, planDeliveryTours } from 'saas-ors-vpn';
 
 const ors = new ORS({ apiKey: process.env.ORS_API_KEY!, defaultProfile: 'driving-hgv' });
 
@@ -232,7 +232,7 @@ console.log(result.tours[0].estimatedDistanceKm);
 #### VRP solver wrapper
 
 ```ts
-import ORS, { planDeliveryToursVRP } from 'saas-ors-vpn';
+import { ORS, planDeliveryToursVRP } from 'saas-ors-vpn';
 
 const ors = new ORS({ apiKey: process.env.ORS_API_KEY!, defaultProfile: 'driving-hgv' });
 

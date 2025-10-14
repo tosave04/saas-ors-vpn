@@ -1,6 +1,6 @@
 {
   "name": "saas-ors-vpn",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "TypeScript wrapper around the openrouteservice API with built-in rate limiting and env-friendly configuration.",
   "repository": {
     "type": "git",
@@ -36,8 +36,7 @@
   "author": "Thomas Savournin <tosave.vbl@gmail.com>",
   "license": "GPL-3.0",
   "dependencies": {
-    "axios": "^1.12.2",
-    "dotenv": "^17.2.3"
+    "axios": "^1.12.2"
   },
   "devDependencies": {
     "@types/geojson": "^7946.0.16",
@@ -48,7 +47,6 @@
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "axios": ">=1.0.0",
-    "dotenv": ">=16.0.0"
+    "axios": ">=1.0.0"
   }
 }
